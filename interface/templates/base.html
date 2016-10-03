@@ -1,0 +1,118 @@
+<!doctype html>
+{% load staticfiles %}
+
+<html lang="es">
+    <head>
+          <meta charset="utf-8">
+          <meta name="description" content="The HTML5 Herald">
+          <title>Example I2C-Django-Python-RaspberryPi-Socket.io-Javascript::MPU-9DOF Realtime Viewer</title>
+          <link rel="stylesheet" href="{% static "css/chat.css" %}">
+          <link rel="stylesheet" href="{% static "css/examples.css" %}">
+          <script language="javascript" type="text/javascript" src="{% static "js/socket.io.js" %}"></script>
+          <script language="javascript" type="text/javascript" src="{% static "js/jquery.js" %}"></script>
+          <script language="javascript" type="text/javascript" src="{% static "js/jquery.flot.js" %}"></script>
+          <script language="javascript" type="text/javascript" src="{% static "js/jquery.flot.time.js" %}"></script>
+          <script language="javascript" type="text/javascript" src="{% static "js/jquery.flot.categories.js" %}"></script>
+          <script type="text/javascript">
+
+              var _X = [];
+              var _Y = [];
+              var _Z = [];
+              var _data = 0.0;
+
+              $(function() {
+      		      $.plot("#placeholder", [
+                                            { data: _X, label: "X acceleration" },
+                                            { data: _Y, label: "Y acceleration" },
+                                            { data: _Z, label: "Z acceleration" }
+                                         ],
+                                         {
+        			                                xaxis: { mode: "time" }
+        		                         }
+                  );
+                  $.plot("#placeholder2", [[["Temp.", _data]]],
+                                          {
+                                                series: {
+                                                    label: "Temperature Cº",
+                                                    bars: {
+                                                        show: true,
+                                                        align: "center",
+                                                        barWidth: 0.1,
+                                                        fill: 0.3
+                                                    }
+
+                                                },
+                                                xaxis: {
+                                                    mode: "categories",
+                                                    tickLength: 0
+                                                },
+                                                yaxis: {
+                                                    min:0, max: 90,  tickSize: 5
+                                                }
+                                          }
+                  );
+              });
+
+              var socket = io.connect("/streaming");
+
+              socket.on('broadcast', function (msg) {
+                  var value = JSON.parse(msg);
+                  var timestamp = (new Date()).getTime();
+
+                  if (50 < _X.length){
+                      _X.splice(0, 1);
+                      _Y.splice(0, 1);
+                      _Z.splice(0, 1);
+                  }
+
+                  _X.push([timestamp, value["X"]*-1]);
+                  _Y.push([timestamp, value["Y"]*-1]);
+                  _Z.push([timestamp, value["Z"]]);
+
+                  $.plot("#placeholder", [
+                                            { data: _X, label: "X acceleration" },
+                                            { data: _Y, label: "Y acceleration" },
+                                            { data: _Z, label: "Z acceleration" }
+                                         ],
+                                         {
+              			                        xaxis: { mode: "time" }
+              		                     }
+                  );
+
+                  _data = value["TEMP"];
+
+                  $.plot("#placeholder2", [[ ["Temp.", _data]]],
+                                          {
+                                                series: {
+                                                    label: "Temperature Cº",
+                                                    bars: {
+                                                        show: true,
+                                                        align: "center",
+                                                        barWidth: 0.1,
+                                                        fill: 0.3
+                                                    }
+                                                },
+                                                xaxis: {
+                                                    mode: "categories",
+                                                    tickLength: 0
+                                                },
+                                                yaxis: {
+                                                    min:0, max: 90,  tickSize: 5
+                                                }
+                                          }
+                  );
+              });
+          </script>
+    </head>
+    <body>
+      	<div id="header">
+      		  <h2>MPU-9DOF Realtime Viewer<br>Gyroscope & Thermometer</h2>
+      	</div>
+      	<div id="content">
+            <div class="demo-container">
+                <div style="float:left;width:630px;" id="placeholder" class="demo-placeholder"></div>
+                <div style="float:right;width:180px;" id="placeholder2" class="demo-placeholder"></div>
+            </div>
+      	</div>
+    </body>
+</html>
